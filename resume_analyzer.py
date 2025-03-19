@@ -159,7 +159,7 @@ def show_job_recommendations(position, keywords, upload_date):
             st.markdown(
                 f"""<a href="https://www.linkedin.com/jobs/search/?keywords={position}" 
                 target="_blank" style="color: #0077b5; text-decoration: none;">
-                ➤ Search {position} jobs on LinkedIn directly</a>""",
+                ➤ Search {position} jobs on LinkedIn </a>""",
                 unsafe_allow_html=True
             )
             return
