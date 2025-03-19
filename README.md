@@ -41,11 +41,16 @@
 
 ## Screenshots
 
-## User side
+## Login Page 
 <img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc1.png">
 
-## Admin Side
+## HR Dashboard
 <img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc2.png">
+<img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc3.png">
+
+## Job Seeker Dashboard
+<img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc4.png">
+<img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc5.png">
 
 
 ## Just follow☝️ me and Star⭐ my repository 
