@@ -39,18 +39,16 @@
 - For more explanation of this project see the tutorial on Machine Learning Hub YouTube channel.
 - Admin side credentials is `machine_learning_hub` and password is `mlhub123`. 
 
-## Screenshots
-
 ## Login Page 
-<img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc1.png">
+<img src="https://github.com/pranitach21/resume_analyzer/blob/main/sc1.png">
 
 ## HR Dashboard
-<img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc2.png">
-<img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc3.png">
+<img src="https://github.com/pranitach21/resume_analyzer/blob/main/sc2.png">
+<img src="https://github.com/pranitach21/resume_analyzer/blob/main/sc3.png">
 
 ## Job Seeker Dashboard
-<img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc4.png">
-<img src="https://github.com/Spidy20/Smart_Resume_Analyser_App/blob/master/sc5.png">
+<img src="https://github.com/pranitach21/resume_analyzer/blob/main/sc4.png">
+<img src="https://github.com/pranitach21/resume_analyzer/blob/main/sc5.png">
 
 
 ## Just follow☝️ me and Star⭐ my repository 
