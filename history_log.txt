@@ -1,0 +1,2389 @@
+import PyPDF2
+import re
+import pandas as pd
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    with open(pdf_path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
+        text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+    return text
+
+# Function to extract skills from resume text
+def extract_skills(text):
+    skills = ["Python", "Java", "Machine Learning", "DevOps", "AWS", "Docker", "Kubernetes", "React"]
+    found_skills = [skill for skill in skills if re.search(rf"\\b{skill}\\b", text, re.IGNORECASE)]
+    return found_skills
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    skills = extract_skills(text)
+    experience = len(re.findall(r"[0-9]+ years", text))  # Extract years of experience
+    data.append({"text": text, "skills": ", ".join(skills), "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+vectorizer = TfidfVectorizer()
+classifier = DecisionTreeClassifier()
+model = make_pipeline(vectorizer, classifier)
+model.fit(X_train, y_train)
+
+# Test model
+accuracy = model.score(X_test, y_test)
+print(f"Model Accuracy: {accuracy:.2f}")
+
+# Function to predict suitability of all resumes in the folder
+def predict_all_resumes():
+    results = {}
+    for pdf in pdf_files:
+        text = extract_text_from_pdf(pdf)
+        prediction = model.predict([text])[0]
+        results[pdf] = "Suitable" if prediction == 1 else "Not Suitable"
+    return results
+
+# Example usage
+resume_results = predict_all_resumes()
+for resume, result in resume_results.items():
+    print(f"{resume}: {result}")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+get_ipython().system('pip install PyPDF2')
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    with open(pdf_path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
+        text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+    return text
+
+# Function to extract skills from resume text
+def extract_skills(text):
+    skills = ["Python", "Java", "Machine Learning", "DevOps", "AWS", "Docker", "Kubernetes", "React"]
+    found_skills = [skill for skill in skills if re.search(rf"\\b{skill}\\b", text, re.IGNORECASE)]
+    return found_skills
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    skills = extract_skills(text)
+    experience = len(re.findall(r"[0-9]+ years", text))  # Extract years of experience
+    data.append({"text": text, "skills": ", ".join(skills), "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+vectorizer = TfidfVectorizer()
+classifier = DecisionTreeClassifier()
+model = make_pipeline(vectorizer, classifier)
+model.fit(X_train, y_train)
+
+# Test model
+accuracy = model.score(X_test, y_test)
+print(f"Model Accuracy: {accuracy:.2f}")
+
+# Function to predict suitability of all resumes in the folder
+def predict_all_resumes():
+    results = {}
+    for pdf in pdf_files:
+        text = extract_text_from_pdf(pdf)
+        prediction = model.predict([text])[0]
+        results[pdf] = "Suitable" if prediction == 1 else "Not Suitable"
+    return results
+
+# Example usage
+resume_results = predict_all_resumes()
+for resume, result in resume_results.items():
+    print(f"{resume}: {result}")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    with open(pdf_path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
+        text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+    return text
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience = len(re.findall(r"[0-9]+ years", text))  # Extract years of experience
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+vectorizer = TfidfVectorizer()
+classifier = DecisionTreeClassifier()
+model = make_pipeline(vectorizer, classifier)
+model.fit(X_train, y_train)
+
+# Test model
+accuracy = model.score(X_test, y_test)
+print(f"Model Accuracy: {accuracy:.2f}")
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    jd_vector = model.named_steps['tfidfvectorizer'].transform([jd_text])
+    best_score = -1
+    best_resume = None
+    
+    for index, row in df.iterrows():
+        resume_vector = model.named_steps['tfidfvectorizer'].transform([row["text"]])
+        score = (resume_vector @ jd_vector.T).toarray()[0][0]  # Cosine similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Get job description from user
+jd_input = input("Enter the job description: ")
+best_resume, best_score = find_best_resume(jd_input)
+print(f"Best matching resume: {best_resume} with score: {best_score:.2f}")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    with open(pdf_path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
+        text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+    return text
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience = len(re.findall(r"[0-9]+ years", text))  # Extract years of experience
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+vectorizer = TfidfVectorizer()
+classifier = DecisionTreeClassifier()
+model = make_pipeline(vectorizer, classifier)
+model.fit(X_train, y_train)
+
+# Test model
+accuracy = model.score(X_test, y_test)
+print(f"Model Accuracy: {accuracy:.2f}")
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    jd_vector = model.named_steps['tfidfvectorizer'].transform([jd_text])
+    best_score = -1
+    best_resume = None
+    
+    for index, row in df.iterrows():
+        resume_vector = model.named_steps['tfidfvectorizer'].transform([row["text"]])
+        score = (resume_vector @ jd_vector.T).toarray()[0][0]  # Cosine similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Get job description from user
+jd_input = input("Enter the job description: ")
+best_resume, best_score = find_best_resume(jd_input)
+recommended_courses = recommend_courses(jd_input)
+
+print(f"Best matching resume: {best_resume} with score: {best_score:.2f}")
+print("Recommended courses:")
+for course in recommended_courses:
+    print(f"- {course[0]}: {course[1]}")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+import streamlit as st
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    with open(pdf_path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
+        text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+    return text
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience = len(re.findall(r"[0-9]+ years", text))  # Extract years of experience
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+vectorizer = TfidfVectorizer()
+classifier = DecisionTreeClassifier()
+model = make_pipeline(vectorizer, classifier)
+model.fit(X_train, y_train)
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    jd_vector = model.named_steps['tfidfvectorizer'].transform([jd_text])
+    best_score = -1
+    best_resume = None
+    
+    for index, row in df.iterrows():
+        resume_vector = model.named_steps['tfidfvectorizer'].transform([row["text"]])
+        score = (resume_vector @ jd_vector.T).toarray()[0][0]  # Cosine similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Streamlit UI
+st.title("Resume Analyzer App")
+
+jd_input = st.text_area("Enter the job description:")
+if st.button("Find Best Resume"):
+    if jd_input:
+        best_resume, best_score = find_best_resume(jd_input)
+        recommended_courses = recommend_courses(jd_input)
+        
+        st.subheader("Best Matching Resume:")
+        st.write(f"{best_resume} with score: {best_score:.2f}")
+        
+        st.subheader("Recommended Courses:")
+        for course in recommended_courses:
+            st.write(f"- [{course[0]}]({course[1]})")
+    else:
+        st.warning("Please enter a job description.")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+import streamlit as st
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    with open(pdf_path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
+        text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+    return text
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience = len(re.findall(r"[0-9]+ years", text))  # Extract years of experience
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+vectorizer = TfidfVectorizer()
+classifier = DecisionTreeClassifier()
+model = make_pipeline(vectorizer, classifier)
+model.fit(X_train, y_train)
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    jd_vector = model.named_steps['tfidfvectorizer'].transform([jd_text])
+    best_score = -1
+    best_resume = None
+    
+    for index, row in df.iterrows():
+        resume_vector = model.named_steps['tfidfvectorizer'].transform([row["text"]])
+        score = (resume_vector @ jd_vector.T).toarray()[0][0]  # Cosine similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Streamlit UI
+st.title("Resume Analyzer App")
+
+jd_input = st.text_area("Enter the job description:")
+if st.button("Find Best Resume"):
+    if jd_input:
+        best_resume, best_score = find_best_resume(jd_input)
+        recommended_courses = recommend_courses(jd_input)
+        
+        st.subheader("Best Matching Resume:")
+        st.write(f"{best_resume} with score: {best_score:.2f}")
+        
+        st.subheader("Recommended Courses:")
+        for course in recommended_courses:
+            st.write(f"- [{course[0]}]({course[1]})")
+    else:
+        st.warning("Please enter a job description.")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+import streamlit as st
+import spacy
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos
+
+# Load NLP model
+nlp = spacy.load("en_core_web_sm")
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    with open(pdf_path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
+        text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+    return text if text else ""
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience_matches = re.findall(r"(\d+)\s*years?", text.lower())  # Extract years of experience
+    experience = max(map(int, experience_matches)) if experience_matches else 0
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+vectorizer = TfidfVectorizer()
+classifier = DecisionTreeClassifier()
+model = make_pipeline(vectorizer, classifier)
+model.fit(X_train, y_train)
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    jd_doc = nlp(jd_text)
+    best_score = -1
+    best_resume = None
+    
+    for _, row in df.iterrows():
+        resume_doc = nlp(row["text"])
+        score = jd_doc.similarity(resume_doc)  # Using spaCy similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Streamlit UI
+st.title("Resume Analyzer App")
+
+jd_input = st.text_area("Enter the job description:")
+if st.button("Find Best Resume"):
+    if jd_input:
+        best_resume, best_score = find_best_resume(jd_input)
+        recommended_courses = recommend_courses(jd_input)
+        
+        st.subheader("Best Matching Resume:")
+        st.write(f"{best_resume} with score: {best_score:.2f}")
+        
+        st.subheader("Recommended Courses:")
+        for course in recommended_courses:
+            st.write(f"- [{course[0]}]({course[1]})")
+    else:
+        st.warning("Please enter a job description.")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+import streamlit as st
+import spacy
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos
+
+# Load NLP model
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    st.error("SpaCy model not found. Run: python -m spacy download en_core_web_sm")
+    nlp = None
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    try:
+        with open(pdf_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+        return text if text else ""
+    except Exception as e:
+        st.error(f"Error reading {pdf_path}: {str(e)}")
+        return ""
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+if not os.path.exists(resume_folder):
+    os.makedirs(resume_folder)
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience_matches = re.findall(r"(\d+)\s*(?:years?|yrs?)", text.lower())  # Extract years of experience
+    experience = max(map(int, experience_matches)) if experience_matches else 0
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+if not df.empty:
+    X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+    vectorizer = TfidfVectorizer()
+    classifier = DecisionTreeClassifier()
+    model = make_pipeline(vectorizer, classifier)
+    model.fit(X_train, y_train)
+else:
+    model = None
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    if nlp is None:
+        return None, 0
+    jd_doc = nlp(jd_text)
+    best_score = -1
+    best_resume = None
+    
+    for _, row in df.iterrows():
+        resume_doc = nlp(row["text"])
+        score = jd_doc.similarity(resume_doc)  # Using spaCy similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Streamlit UI
+st.title("Resume Analyzer App")
+
+jd_input = st.text_area("Enter the job description:")
+if st.button("Find Best Resume"):
+    if jd_input:
+        best_resume, best_score = find_best_resume(jd_input) if model else (None, 0)
+        recommended_courses = recommend_courses(jd_input)
+        
+        if best_resume:
+            st.subheader("Best Matching Resume:")
+            st.write(f"{best_resume} with score: {best_score:.2f}")
+        else:
+            st.warning("No resumes found or model not trained.")
+        
+        st.subheader("Recommended Courses:")
+        for course in recommended_courses:
+            st.write(f"- [{course[0]}]({course[1]})")
+    else:
+        st.warning("Please enter a job description.")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+get_ipython().system('pip install en_core_web_sm')
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+import streamlit as st
+import spacy
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos
+
+# Load NLP model
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    st.error("SpaCy model not found. Run: python -m spacy download en_core_web_sm")
+    nlp = None
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    try:
+        with open(pdf_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+        return text if text else ""
+    except Exception as e:
+        st.error(f"Error reading {pdf_path}: {str(e)}")
+        return ""
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+if not os.path.exists(resume_folder):
+    os.makedirs(resume_folder)
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience_matches = re.findall(r"(\d+)\s*(?:years?|yrs?)", text.lower())  # Extract years of experience
+    experience = max(map(int, experience_matches)) if experience_matches else 0
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+if not df.empty:
+    X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+    vectorizer = TfidfVectorizer()
+    classifier = DecisionTreeClassifier()
+    model = make_pipeline(vectorizer, classifier)
+    model.fit(X_train, y_train)
+else:
+    model = None
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    if nlp is None:
+        return None, 0
+    jd_doc = nlp(jd_text)
+    best_score = -1
+    best_resume = None
+    
+    for _, row in df.iterrows():
+        resume_doc = nlp(row["text"])
+        score = jd_doc.similarity(resume_doc)  # Using spaCy similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Streamlit UI
+st.title("Resume Analyzer App")
+
+jd_input = st.text_area("Enter the job description:")
+if st.button("Find Best Resume"):
+    if jd_input:
+        best_resume, best_score = find_best_resume(jd_input) if model else (None, 0)
+        recommended_courses = recommend_courses(jd_input)
+        
+        if best_resume:
+            st.subheader("Best Matching Resume:")
+            st.write(f"{best_resume} with score: {best_score:.2f}")
+        else:
+            st.warning("No resumes found or model not trained.")
+        
+        st.subheader("Recommended Courses:")
+        for course in recommended_courses:
+            st.write(f"- [{course[0]}]({course[1]})")
+    else:
+        st.warning("Please enter a job description.")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+import streamlit as st
+import spacy
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos
+import subprocess
+
+# Load NLP model
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    st.warning("Downloading SpaCy model...")
+    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+    nlp = spacy.load("en_core_web_sm")
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    try:
+        with open(pdf_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+        return text if text else ""
+    except Exception as e:
+        st.error(f"Error reading {pdf_path}: {str(e)}")
+        return ""
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+if not os.path.exists(resume_folder):
+    os.makedirs(resume_folder)
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience_matches = re.findall(r"(\d+)\s*(?:years?|yrs?)", text.lower())  # Extract years of experience
+    experience = max(map(int, experience_matches)) if experience_matches else 0
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+if not df.empty:
+    X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+    vectorizer = TfidfVectorizer()
+    classifier = DecisionTreeClassifier()
+    model = make_pipeline(vectorizer, classifier)
+    model.fit(X_train, y_train)
+else:
+    model = None
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    if nlp is None:
+        return None, 0
+    jd_doc = nlp(jd_text)
+    best_score = -1
+    best_resume = None
+    
+    for _, row in df.iterrows():
+        resume_doc = nlp(row["text"])
+        score = jd_doc.similarity(resume_doc)  # Using spaCy similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Streamlit UI
+st.title("Resume Analyzer App")
+
+jd_input = st.text_area("Enter the job description:")
+if st.button("Find Best Resume"):
+    if jd_input:
+        best_resume, best_score = find_best_resume(jd_input) if model else (None, 0)
+        recommended_courses = recommend_courses(jd_input)
+        
+        if best_resume:
+            st.subheader("Best Matching Resume:")
+            st.write(f"{best_resume} with score: {best_score:.2f}")
+        else:
+            st.warning("No resumes found or model not trained.")
+        
+        st.subheader("Recommended Courses:")
+        for course in recommended_courses:
+            st.write(f"- [{course[0]}]({course[1]})")
+    else:
+        st.warning("Please enter a job description.")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+import streamlit as st
+import spacy
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos
+import subprocess
+
+# Load NLP model
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    st.warning("Downloading SpaCy model...")
+    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+    nlp = spacy.load("en_core_web_sm")
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    try:
+        with open(pdf_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+        return text if text else ""
+    except Exception as e:
+        st.error(f"Error reading {pdf_path}: {str(e)}")
+        return ""
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+if not os.path.exists(resume_folder):
+    os.makedirs(resume_folder)
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience_matches = re.findall(r"(\d+)\s*(?:years?|yrs?)", text.lower())  # Extract years of experience
+    experience = max(map(int, experience_matches)) if experience_matches else 0
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+if not df.empty:
+    X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+    vectorizer = TfidfVectorizer()
+    classifier = DecisionTreeClassifier()
+    model = make_pipeline(vectorizer, classifier)
+    model.fit(X_train, y_train)
+else:
+    model = None
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    if nlp is None:
+        return None, 0
+    jd_doc = nlp(jd_text)
+    best_score = -1
+    best_resume = None
+    
+    for _, row in df.iterrows():
+        resume_doc = nlp(row["text"])
+        score = jd_doc.similarity(resume_doc)  # Using spaCy similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Streamlit UI
+st.title("Resume Analyzer App")
+
+jd_input = st.text_area("Enter the job description:")
+if st.button("Find Best Resume"):
+    if jd_input:
+        best_resume, best_score = find_best_resume(jd_input) if model else (None, 0)
+        recommended_courses = recommend_courses(jd_input)
+        
+        if best_resume:
+            st.subheader("Best Matching Resume:")
+            st.write(f"{best_resume} with score: {best_score:.2f}")
+        else:
+            st.warning("No resumes found or model not trained.")
+        
+        st.subheader("Recommended Courses:")
+        for course in recommended_courses:
+            st.write(f"- [{course[0]}]({course[1]})")
+    else:
+        st.warning("Please enter a job description.")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+get_ipython().system('pip install nbconvert')
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+get_ipython().system('pip install nbconvert')
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+get_ipython().system('pip install -r requirements.txt')
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+import streamlit as st
+import spacy
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos
+import subprocess
+
+# Load NLP model
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    st.warning("Downloading SpaCy model...")
+    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+    nlp = spacy.load("en_core_web_sm")
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    try:
+        with open(pdf_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+        return text if text else ""
+    except Exception as e:
+        st.error(f"Error reading {pdf_path}: {str(e)}")
+        return ""
+
+# Load and process resumes from uploaded_resumes folder
+resume_folder = "uploaded_resumes"
+if not os.path.exists(resume_folder):
+    os.makedirs(resume_folder)
+pdf_files = [os.path.join(resume_folder, f) for f in os.listdir(resume_folder) if f.endswith(".pdf")]
+data = []
+
+for pdf in pdf_files:
+    text = extract_text_from_pdf(pdf)
+    experience_matches = re.findall(r"(\d+)\s*(?:years?|yrs?)", text.lower())  # Extract years of experience
+    experience = max(map(int, experience_matches)) if experience_matches else 0
+    data.append({"text": text, "experience": experience, "file": pdf})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df["label"] = df["experience"].apply(lambda x: 1 if x >= 3 else 0)  # Example: Label candidates as suitable (1) or not (0)
+
+# Train a Decision Tree model
+if not df.empty:
+    X_train, X_test, y_train, y_test = train_test_split(df["text"], df["label"], test_size=0.2, random_state=42)
+    vectorizer = TfidfVectorizer()
+    classifier = DecisionTreeClassifier()
+    model = make_pipeline(vectorizer, classifier)
+    model.fit(X_train, y_train)
+else:
+    model = None
+
+# Function to find the best matching resume based on a job description
+def find_best_resume(jd_text):
+    if nlp is None:
+        return None, 0
+    jd_doc = nlp(jd_text)
+    best_score = -1
+    best_resume = None
+    
+    for _, row in df.iterrows():
+        resume_doc = nlp(row["text"])
+        score = jd_doc.similarity(resume_doc)  # Using spaCy similarity
+        
+        if score > best_score:
+            best_score = score
+            best_resume = row["file"]
+    
+    return best_resume, best_score
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Streamlit UI
+st.title("Resume Analyzer App")
+
+jd_input = st.text_area("Enter the job description:")
+if st.button("Find Best Resume"):
+    if jd_input:
+        best_resume, best_score = find_best_resume(jd_input) if model else (None, 0)
+        recommended_courses = recommend_courses(jd_input)
+        
+        if best_resume:
+            st.subheader("Best Matching Resume:")
+            st.write(f"{best_resume} with score: {best_score:.2f}")
+        else:
+            st.warning("No resumes found or model not trained.")
+        
+        st.subheader("Recommended Courses:")
+        for course in recommended_courses:
+            st.write(f"- [{course[0]}]({course[1]})")
+    else:
+        st.warning("Please enter a job description.")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import PyPDF2
+import re
+import pandas as pd
+import os
+import streamlit as st
+import spacy
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos, interview_videos
+import subprocess
+
+# Load NLP model
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    st.warning("Downloading SpaCy model...")
+    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+    nlp = spacy.load("en_core_web_sm")
+
+# Function to extract text from a PDF resume
+def extract_text_from_pdf(pdf_path):
+    try:
+        with open(pdf_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            text = " ".join(page.extract_text() for page in reader.pages if page.extract_text())
+        return text if text else ""
+    except Exception as e:
+        st.error(f"Error reading {pdf_path}: {str(e)}")
+        return ""
+
+# Function to recommend courses based on JD
+def recommend_courses(jd_text):
+    all_courses = ds_course + web_course + android_course + ios_course + uiux_course
+    recommended = [course for course in all_courses if any(skill.lower() in jd_text.lower() for skill in course[0].split())]
+    return recommended[:5]  # Return top 5 recommendations
+
+# Streamlit UI
+st.title("Smart Resume Analyser")
+
+# User Type Selection
+user_type = st.sidebar.selectbox("Choose User", ["Normal User", "Admin"])
+
+if user_type == "Normal User":
+    st.header("Normal User")
+    uploaded_file = st.file_uploader("Choose your Resume", type=["pdf"])
+    if uploaded_file is not None:
+        # Save the uploaded file
+        resume_folder = "uploaded_resumes"
+        if not os.path.exists(resume_folder):
+            os.makedirs(resume_folder)
+        file_path = os.path.join(resume_folder, uploaded_file.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        
+        # Extract text from the resume
+        text = extract_text_from_pdf(file_path)
+        st.success("Resume uploaded successfully!")
+
+        # Display basic info (example)
+        st.subheader("Your Basic Info")
+        st.write("Name: ROBERT SMITH")  # Replace with actual extraction logic
+        st.write("Email: info@qwikresume.com")  # Replace with actual extraction logic
+
+        # Skills Recommendation
+        st.subheader("Skills Recommendation")
+        st.write("Our analysis says you are looking for Data Science Jobs.")
+        st.write("Recommended skills for you:")
+        st.write("- Machine Learning")
+        st.write("- Python")
+        st.write("- Data Analysis")
+
+        # Courses & Certificates Recommendations
+        st.subheader("Courses & Certificates Recommendations")
+        num_courses = st.slider("Choose Number of Course Recommendations", 1, 5, 4)
+        recommended_courses = recommend_courses(text)[:num_courses]
+        for i, course in enumerate(recommended_courses, 1):
+            st.write(f"{i}. [{course[0]}]({course[1]})")
+
+        # Resume Tips & Ideas
+        st.subheader("Resume Tips & Ideas")
+        st.write("- Add your career objective to give your career intention to recruiters.")
+        st.write("- Add a declaration to assure that everything written on your resume is true.")
+        st.write("- Add hobbies to show your personality.")
+        st.write("- Add achievements to show your capabilities.")
+        st.write("- Add projects to demonstrate your experience.")
+
+        # Resume Score
+        st.subheader("Resume Score")
+        resume_score = 20  # Replace with actual scoring logic
+        st.write(f"Your Resume Writing Score: {resume_score}")
+        st.write("Note: This score is calculated based on the content that you have added in your Resume.")
+
+        # Bonus Videos
+        st.subheader("Bonus Video for Resume Writing Tips")
+        st.video(resume_videos[0])
+
+        st.subheader("Bonus Video for Interview Tips")
+        st.video(interview_videos[0])
+
+elif user_type == "Admin":
+    st.header("Admin Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if username == "machine_learning_hub" and password == "mlhub123":
+        st.success("Welcome Kushal")
+        st.subheader("User's Data")
+        # Example data
+        user_data = {
+            "Name": ["Robert Smith", "Jane Doe"],
+            "Email": ["info@qwikresume.com", "jane@example.com"],
+            "Resume Score": [20, 85],
+            "Timestamp": ["2023-10-01 10:00", "2023-10-02 11:00"]
+        }
+        df = pd.DataFrame(user_data)
+        st.dataframe(df)
+    else:
+        st.error("Invalid username or password")
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+get_ipython().system('pip install PyPDF2')
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+get_ipython().run_line_magic('history', '')
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+get_ipython().run_line_magic('history', '-t')
+import json
+import getpass
+import hashlib
+
+def import_pandas_safely():
+    try:
+        return __import__('pandas')
+    except ImportError:
+        return False
+
+
+__pandas = import_pandas_safely()
+
+
+def is_data_frame(v: str):
+    obj = eval(v)
+    if  isinstance(obj, __pandas.core.frame.DataFrame) or isinstance(obj, __pandas.core.series.Series):
+        return True
+
+
+def dataframe_columns(var):
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return [[df.name, str(df.dtype)]]
+    return list(map(lambda col: [col, str(df[col].dtype)], df.columns))
+
+
+def dtypes_str(frame):
+    return str(eval(frame).dtypes)
+
+def dataframe_hash(var):
+    # Return a hash including the column names and number of rows
+    df = eval(var)
+    if isinstance(df, __pandas.core.series.Series):
+        return hashlib.sha256(f"{var}-{df.name},{len(df)}".encode('utf-8')).hexdigest()
+    return hashlib.sha256(f"{var}-{','.join(df.columns)},{len(df)}".encode('utf-8')).hexdigest()
+
+def get_dataframes():
+    if __pandas is None:
+        return []
+    user = getpass.getuser()
+    values = get_ipython().run_line_magic('who_ls', '')
+    dataframes = [
+        {
+            "name": var,
+            "type": type(eval(var)).__name__,
+            "hash": dataframe_hash(var),
+            "cols": dataframe_columns(var),
+            "dtypesStr": dtypes_str(var),
+        }
+        for var in values if is_data_frame(var)
+    ]
+    result = {"dataframes": dataframes, "user": user}
+    return json.dumps(result, ensure_ascii=False)
+
+
+get_dataframes()
+get_ipython().run_line_magic('history', '-t -f history_log.txt')
